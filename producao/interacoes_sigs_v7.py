@@ -18,17 +18,15 @@ from sqlalchemy import create_engine
 import datetime
 from dateutil.relativedelta import *
 
-# arquivos globais
-# arquivo convertido em xlsx
-triagem_arquivo_entrada = '//srv-arquivos07/dirgerti/SEDT_AUTORE/TN_AUTORE/SUSTENTAÇÃO/Incidentes/robo_sigs/extracao_robo.xlsx'
-# arquivo com os incidentes classificados
-triagem_arquivo_final = '//srv-arquivos07/dirgerti/SEDT_AUTORE/TN_AUTORE/SUSTENTAÇÃO/Incidentes/robo_sigs/classificao_triagem.xlsx'
+# arquivo com os caminhos de diretórios
+df_diretorios = pd.read_excel('diretorios.xlsx', sheet_name='Plan1')
+
 inicio_execucao = time.perf_counter()
+arquivo_login = 'login_robo_bare.xlsx'
 
 
 def login(driver):
-    df_login = pd.read_excel(
-        'C:/Users/' + matricula + '/Documents/Python/login_robo_bare.xlsx', sheet_name='Plan1')
+    df_login = pd.read_excel(arquivo_login, sheet_name='Plan1')
     login = df_login['LOGIN'][0]
     senha = df_login['SENHA'][0]
     IS.insere_texto(IS.retorna_objetos(
@@ -112,7 +110,7 @@ def pagina_lista_artefatos_pesquisados(driver):
 def aguarda_download(timeout):
     print('aguardando o download')
     count = 0  # variavel de controle do timeout do download do arquivo
-    arquivo = '//srv-arquivos07/dirgerti/SEDT_AUTORE/TN_AUTORE/SUSTENTAÇÃO/Incidentes/robo_sigs/downloads/export.txt'
+    arquivo = df_diretorios['download'][0] + 'export.txt'
     while (not os.path.exists(arquivo) and count < timeout):
         time.sleep(1)
         count += 1
@@ -160,9 +158,9 @@ def second_run_incidentes(driver, grupo, aberto_apos, cabecalho, tipo_execucao, 
     pagina_lista_artefatos_pesquisados(driver)
     is_timeout = pagina_exportacao(driver, cabecalho, timeout_arquivo)
     if is_timeout == 'ok':
-        nome_arquivo = '//srv-arquivos07/dirgerti/SEDT_AUTORE/TN_AUTORE/SUSTENTAÇÃO/Incidentes/robo_sigs/downloads/export (' + str(
-            numero_arquivo) + ').txt'
-        os.rename('//srv-arquivos07/dirgerti/SEDT_AUTORE/TN_AUTORE/SUSTENTAÇÃO/Incidentes/robo_sigs/downloads/export.txt', nome_arquivo)
+        nome_arquivo = df_diretorios['download'][0] + \
+            'export (' + str(numero_arquivo) + ').txt'
+        os.rename(df_diretorios['download'][0]+'export.txt', nome_arquivo)
         # renomeia o arquivo baixado para evitar a sobrescreção na execução headless
 
 
@@ -187,13 +185,13 @@ def main_extrai_incidentes(tipo_execucao):
 
     if tipo_execucao == 1:  # faz extração de uma lista completa: grupos da sustentação + projeto + SAP
         df_grupos = pd.read_excel(
-            '\\\\srv-arquivos07\\dirgerti\\SEDT_AUTORE\\TN_AUTORE\\SUSTENTAÇÃO\\Incidentes\\robo_sigs\\LISTA_GRUPOS_EXTRACAO.xlsx', sheet_name='Plan1')
+            df_diretorios['robo_sigs'][0] + '\\' + 'LISTA_GRUPOS_EXTRACAO.xlsx', sheet_name='Plan1')
     elif tipo_execucao == 2:  # extração para triagem
         df_grupos = pd.read_excel(
-            '\\\\srv-arquivos07\\dirgerti\\SEDT_AUTORE\\TN_AUTORE\\SUSTENTAÇÃO\\Incidentes\\robo_sigs\\LISTA_GRUPOS_EXTRACAO_TRIAGEM.xlsx', sheet_name='Plan1')
+            df_diretorios['robo_sigs'][0] + '\\' + 'LISTA_GRUPOS_EXTRACAO_TRIAGEM.xlsx', sheet_name='Plan1')
     elif tipo_execucao == 3:  # extração para tipificação dos incidentes
         df_grupos = pd.read_excel(
-            '\\\\srv-arquivos07\\dirgerti\\SEDT_AUTORE\\TN_AUTORE\\SUSTENTAÇÃO\\Incidentes\\robo_sigs\\LISTA_GRUPOS_EXTRACAO_TIPIFICACAO.xlsx', sheet_name='Plan1')
+            df_diretorios['robo_sigs'][0] + '\\' + 'LISTA_GRUPOS_EXTRACAO_TIPIFICACAO.xlsx', sheet_name='Plan1')
     df_grupos = df_grupos[df_grupos['ATIVO?']
                           == 'S']  # remove os grupos inativos
 
@@ -220,7 +218,7 @@ def main_extrai_incidentes(tipo_execucao):
 
     # calculo do dia do ano passado para reduzir a volumetria das extrações
     hoje = date.today()
-    um_ano = timedelta(367)
+    um_ano = timedelta(10)  # depois dos testes retornar para 367 dias
     dia_ano_passado = str((hoje - um_ano).strftime("%d/%m/%y")) + ' 23:59:59'
 
     driver = baixa_incidentes_grupo(
@@ -308,7 +306,7 @@ def main_extrai_incidentes(tipo_execucao):
 def triagem_classifica():
     print("========================================Início da classificação========================================")
     # o arquivo tem o encoding ansi, então é necessário marcar isso juntamente com o delimitador sep='\t' que significa por tab
-    df = pd.read_excel(triagem_arquivo_entrada)
+    df = pd.read_excel(df_diretorios['triagem_arquivo_entrada'][0])
     # remove as linhas que não tenham o grupo DS - BS - SUSTENTACAO-BARE
     df = df[df['Designação principal'] == 'DS - BS - SUSTENTACAO-BARE']
     # faz triagem somente dos incidentes de produção. Os de outros ambientes não são tratados pela sustentação
@@ -367,7 +365,8 @@ def triagem_classifica():
     # cria a coluna dos grupos de destino no dataframe
     df['GRUPO_DESTINO'] = lista_grupos
     # gera o arquivo de destino sem a coluna de indice que é gerada automaticamente pelo dataframe do pandas
-    df.to_excel(triagem_arquivo_final, 'Planilha1', index=False)
+    df.to_excel(df_diretorios['triagem_arquivo_final']
+                [0], 'Planilha1', index=False)
     lista_grp_destino = df['GRUPO_DESTINO'].values
     total_incidentes = len(lista_grp_destino)  # total de incidentes na lista
     indeterminados = np.count_nonzero(lista_grp_destino == "INDETERMINADO")
@@ -505,7 +504,8 @@ def inicia_redirecionamento():
     lista_ids = []  # lista que armazena os ids dos incidentes
     lista_grp_destino = []  # lista que são armazenados os grupos de destino
     lista_tipificacao = []  # lista que receberá as tipificações dos incidentes
-    df = pd.read_excel(triagem_arquivo_final, sheet_name='Planilha1')
+    df = pd.read_excel(
+        df_diretorios['triagem_arquivo_final'][0], sheet_name='Planilha1')
     lista_ids = df['ID do Incidente'].values
     lista_grp_destino = df['GRUPO_DESTINO'].values
     lista_tipificacao = df['Brd Tp in'].values
@@ -1126,7 +1126,3 @@ def main(comando):
         print('Comando inválido.')
         return 'invalido'
     return 'valido'
-
-
-if __name__ == '__main__':
-    main()

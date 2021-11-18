@@ -1,2 +1,4 @@
 import sys
-print(sys.prefix)
+import teste_copy as t
+
+t.main()
