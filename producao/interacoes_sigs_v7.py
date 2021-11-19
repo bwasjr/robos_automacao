@@ -306,7 +306,7 @@ def main_extrai_incidentes(tipo_execucao):
 def triagem_classifica():
     print("========================================Início da classificação========================================")
     # o arquivo tem o encoding ansi, então é necessário marcar isso juntamente com o delimitador sep='\t' que significa por tab
-    df = pd.read_excel(df_diretorios['triagem_arquivo_entrada'][0])
+    df = pd.read_excel(df_diretorios['robo_sigs'][0] + 'extracao_robo.xlsx')
     # remove as linhas que não tenham o grupo DS - BS - SUSTENTACAO-BARE
     df = df[df['Designação principal'] == 'DS - BS - SUSTENTACAO-BARE']
     # faz triagem somente dos incidentes de produção. Os de outros ambientes não são tratados pela sustentação
@@ -365,8 +365,8 @@ def triagem_classifica():
     # cria a coluna dos grupos de destino no dataframe
     df['GRUPO_DESTINO'] = lista_grupos
     # gera o arquivo de destino sem a coluna de indice que é gerada automaticamente pelo dataframe do pandas
-    df.to_excel(df_diretorios['triagem_arquivo_final']
-                [0], 'Planilha1', index=False)
+    df.to_excel(df_diretorios['robo_sigs'][0] +
+                'classificao_triagem.xlsx', 'Planilha1', index=False)
     lista_grp_destino = df['GRUPO_DESTINO'].values
     total_incidentes = len(lista_grp_destino)  # total de incidentes na lista
     indeterminados = np.count_nonzero(lista_grp_destino == "INDETERMINADO")
@@ -505,7 +505,7 @@ def inicia_redirecionamento():
     lista_grp_destino = []  # lista que são armazenados os grupos de destino
     lista_tipificacao = []  # lista que receberá as tipificações dos incidentes
     df = pd.read_excel(
-        df_diretorios['triagem_arquivo_final'][0], sheet_name='Planilha1')
+        df_diretorios['robo_sigs'][0] + 'classificao_triagem.xlsx', sheet_name='Planilha1')
     lista_ids = df['ID do Incidente'].values
     lista_grp_destino = df['GRUPO_DESTINO'].values
     lista_tipificacao = df['Brd Tp in'].values
