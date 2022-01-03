@@ -2,6 +2,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
 import numpy as np
 import time
 from datetime import date
@@ -301,9 +302,9 @@ def main_extrai_incidentes(tipo_execucao: int):
     df = converte_df_datatypes(df)  # converte os data types para datetime
 
     # remoção de aspas no id do incidente
-    df['ID do Incidente'] = df['ID do Incidente'].str.replace('"', '')
-    df['ID do Incidente'] = df['ID do Incidente'].str.replace('\n', '')
-    df['ID do Incidente'] = df['ID do Incidente'].str.replace('\t', '')
+    df['ID do Incidente'].replace('"', '', inplace=True)
+    df['ID do Incidente'].replace('\n', '', inplace=True)
+    df['ID do Incidente'].replace('\t', '', inplace=True)
 
     # cria a coluna de portal de negócios
     df['is_portal'] = ''
@@ -464,9 +465,9 @@ def trata_excecao_janela_salvar(driver):
         # print('botão não encontrado')
         driver.switch_to.default_content()  # retorna ao content default
     try:
+        # clica no botão para fechar a janela de salvar
         IS.clica_xpath_time(driver, '//button[text()="Não"]', 3)
-        # print('clicou no botão não')
-    except:
+    except TimeoutException:
         print('A janela de prompt para salvar não surgiu, o robô pode continuar')
         pass
 
@@ -1108,7 +1109,6 @@ def gera_indice_resolucao(portal):
                 lista_contagens.append(valor)
 
     df_resolvidos_por_grupo['count_criados'] = lista_contagens
-    df_resolvidos_por_grupo['count_criados']
     df_resolvidos_por_grupo['indice_resolucao'] = df_resolvidos_por_grupo['count_resolvidos'] / \
         df_resolvidos_por_grupo['count_criados']
     df_resolvidos_por_grupo.to_excel(
