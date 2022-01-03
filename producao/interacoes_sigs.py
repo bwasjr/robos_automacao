@@ -478,8 +478,8 @@ def redireciona_incidente(driver, id_incidente, grupo_destino, expande, tipo_pro
     # troca para o frame do formulario do incidente
     IS.troca_frame(driver, lista_objetos[1])
     time.sleep(4)
-    IS.retorna_objetos(driver, 'id', 'X35').clear()
-    IS.retorna_objetos(driver, 'id', 'X35').send_keys(grupo_destino)
+    IS.retorna_objetos(driver, 'id', 'X36').clear()
+    IS.retorna_objetos(driver, 'id', 'X36').send_keys(grupo_destino)
     if(expande == True):  # se a aba de atividades ainda não foi expandida
         # clica para expandir a aba
         IS.clica_xpath(driver, '//span[text()="Atividades"]')
